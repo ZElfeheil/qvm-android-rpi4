@@ -1,0 +1,33 @@
+system android
+set pointer-authentication off
+logger debug,verbose,info,warn,error,fatal stdout
+
+set host-paddr-gicd 0xff841000
+set host-paddr-gich 0xff844000
+set host-paddr-gicv 0xff846000
+
+cpu
+cpu
+
+ram 0x80000000,4G
+
+vdev gic
+        version 2
+        gicd 0x09000000
+        gicc 0x09002000
+
+vdev pl011
+        loc 0x1c090000
+        intr gic:37
+
+vdev virtio-blk
+        loc 0x1c0d0000
+        intr gic:41
+        hostdev /guests/android/sdcard_virtio.img
+        name virtio-blk_android
+
+fdt load /guests/android/bcm2711.dtb
+
+load /guests/android/Image
+initrd load /guests/android/ramdisk.img
+cmdline "console=ttyAMA0 earlycon=pl011,0x1c090000 androidboot.hardware=rpi4car androidboot.selinux=permissive androidboot.slot_suffix=_a androidboot.boot_device=1c0d0000.disk,vdevs/1c0d0000.disk,vdevs androidboot.boot_devices=1c0d0000.disk,vdevs/1c0d0000.disk,vdevs androidboot.android_dt_dir=/nonexistent psi=1 debug loglevel=9"
