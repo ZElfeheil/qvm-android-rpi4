@@ -18,14 +18,18 @@ This repository contains the configuration files, cross-compilation scripts, and
 
 ```text
 ├── README.md               # This setup and integration guide
-├── android.qvmconf         # QNX Hypervisor Guest configuration file
+├── android.qvmconf         # QNX Hypervisor QVM configuration file
 ├── bcm2711.dtb             # Clean Device Tree Blob (Copy from QNX BSP)
 ├── ramdisk_patched.img     # Pre-patched ramdisk (1.67MB) with fstab.rpi4car injected
-├── rebuild_kernel.sh       # Dockerized kernel cross-compilation script
+├── rebuild_kernel.sh       # Orchestrator script to build and run the Docker environment
+├── docker/
+│   ├── Dockerfile          # Builds the compiler container image (Ubuntu 22.04 + toolchain)
+│   └── build_kernel.sh     # Inside-container compilation script (clones and builds kernel)
 └── scripts/
     ├── modify_userdata.py  # Superblock patcher to disable ext4 quota remotely
     └── patch_super_fstab.py # In-place vendor fstab editor inside sdcard_virtio.img
 ```
+
 
 ---
 
@@ -63,15 +67,16 @@ scp /path/to/qnx800/bsp/raspberrypi-rpi4/images/bcm2711-rpi-4-b.dtb root@<RPI4_I
 ```
 
 #### 2. Cross-Compile the VirtIO Kernel
-Run the cross-compilation script inside a Docker container on your development machine to build the custom kernel `Image` containing VirtIO MMIO and SELinux parameters:
+Run the build script on your development machine. It will automatically build the local Docker compilation environment image (`qvm-android-kernel-builder`) and execute it to output the custom kernel `Image` containing VirtIO MMIO and SELinux parameters:
 ```bash
 # On your Mac:
 chmod +x rebuild_kernel.sh
 ./rebuild_kernel.sh
 
-# Transfer to QNX host:
+# Transfer the compiled Image to QNX host:
 scp output/Image root@<RPI4_IP>:/guests/android/Image
 ```
+
 
 #### 3. Patch the Android Disk Image
 Generate your GloDroid/AOSP `sdcard.img`, rename it to `sdcard_virtio.img`, transfer it to `/guests/android/sdcard_virtio.img` on the QNX host, and run the Python patchers to configure unencrypted booting:
